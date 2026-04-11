@@ -13,10 +13,21 @@ from reportlab.platypus import (
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 import os
+from datetime import date
 
 st.set_page_config(page_title="PHANTOM", layout="wide")
 
 PHANTOM_FULL = "Predictive Health Analytics of Nephron Toxicity from Oral Microbiomes"
+
+# ----------------------------
+# Color palette
+# ----------------------------
+# Dark purple  : #3b0d6e  — primary text (high contrast on white & light purple)
+# Mid purple   : #6b2d9e  — headings, section titles
+# Bright purple: #7c3aed  — buttons, accents, borders
+# Light purple : #ede9fe  — card / panel backgrounds
+# Pale purple  : #f5f0ff  — page / container backgrounds
+# White        : #ffffff  — base background
 
 # ----------------------------
 # Styling
@@ -26,34 +37,34 @@ st.markdown(
     <style>
     html, body, [class*="css"] {
         font-family: Georgia, "Times New Roman", serif !important;
-        color: #f0f1f2 !important;
+        color: #3b0d6e !important;
     }
 
     .stApp {
-        background-color: #1f2937 !important;
-        color: #1f2937 !important;
+        background-color: #ffffff !important;
+        color: #3b0d6e !important;
     }
 
     p, div, label, span, li {
-        color: #f0f1f2 !important;
+        color: #3b0d6e !important;
     }
 
     h1, h2, h3 {
-        color: #a95eff !important;
+        color: #6b2d9e !important;
         font-family: Georgia, "Times New Roman", serif !important;
     }
 
     div.stButton > button {
-        background-color: #a95eff !important;
-        color: white !important;
+        background-color: #7c3aed !important;
+        color: #ffffff !important;
         border-radius: 10px !important;
-        border: 1px solid #4a009e !important;
+        border: 1px solid #6b2d9e !important;
         font-weight: 600 !important;
     }
 
     div.stButton > button:hover {
-        background-color: #4a009e !important;
-        color: white !important;
+        background-color: #5b21b6 !important;
+        color: #ffffff !important;
     }
 
     .landing-wrap {
@@ -66,42 +77,218 @@ st.markdown(
         font-size: 64px;
         font-weight: 800;
         letter-spacing: 2px;
-        color: #7a0019;
+        color: #6b2d9e;
         margin-top: 16px;
         margin-bottom: 10px;
+        text-align: center !important;
     }
 
     .landing-sub {
         font-size: 20px;
         font-weight: 700;
-        color: #1f2937;
+        color: #3b0d6e;
         margin-bottom: 10px;
+        text-align: center !important;
     }
 
     .landing-desc {
         font-size: 20px;
         line-height: 1.6;
-        color: #374151;
-        max-width: 900px;
+        color: #3b0d6e;
+        max-width: 760px;
         margin: 0 auto 24px auto;
+        text-align: center !important;
+    }
+
+    /* Force Streamlit title/subheader on landing to centre */
+    .landing-wrap h1,
+    .landing-wrap h2,
+    .landing-wrap h3,
+    .landing-wrap p,
+    .landing-wrap div {
+        text-align: center !important;
     }
 
     .dashboard-card {
-        background: black;
-        border: 2px solid #9046e3;
+        background: #ede9fe;
+        border: 2px solid #7c3aed;
         border-radius: 18px;
         padding: 18px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        box-shadow: 0 2px 10px rgba(124, 58, 237, 0.18);
         margin-bottom: 16px;
     }
 
     .section-panel {
-        background: black;
-        border: 1px solid #9046e3;
+        background: #ede9fe;
+        border: 1px solid #7c3aed;
         border-radius: 18px;
         padding: 20px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        box-shadow: 0 2px 10px rgba(124, 58, 237, 0.18);
         margin-bottom: 18px;
+    }
+
+    /* Slider */
+    .stSlider > div > div > div > div {
+        background-color: #7c3aed !important;
+    }
+
+    /* Containers */
+    div[data-testid="stContainer"] {
+        background-color: #f5f0ff !important;
+        border-color: #7c3aed !important;
+    }
+
+    /* Input fields */
+    input, textarea {
+        background-color: #ede9fe !important;
+        border: 1px solid #7c3aed !important;
+        color: #3b0d6e !important;
+        border-radius: 8px !important;
+    }
+
+    input:focus, textarea:focus {
+        border-color: #5b21b6 !important;
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15) !important;
+    }
+
+    /* Selectbox trigger box */
+    [data-testid="stSelectbox"] > div > div {
+        background-color: #ede9fe !important;
+        border: 1px solid #7c3aed !important;
+        color: #3b0d6e !important;
+    }
+
+    /* Dropdown chevron/arrow — recolor the SVG icon */
+    [data-testid="stSelectbox"] svg,
+    [data-baseweb="select"] svg {
+        fill: #6b2d9e !important;
+        color: #6b2d9e !important;
+        stroke: #6b2d9e !important;
+    }
+
+    /* Remove any stray outline or border near labels */
+    [data-testid="stSelectbox"] label,
+    [data-testid="stSelectbox"] > label,
+    .stSelectbox > label {
+        outline: none !important;
+        border: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+    }
+
+    /* Kill focus outlines on the baseweb control itself */
+    [data-baseweb="select"] > div:focus,
+    [data-baseweb="select"] > div:focus-visible,
+    [data-baseweb="select"] > div {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    /* ── Dropdown portal (baseweb popover) ── */
+    [data-baseweb="popover"],
+    [data-baseweb="popover"] * {
+        background-color: #ede9fe !important;
+        color: #3b0d6e !important;
+    }
+
+    /* Menu container */
+    [data-baseweb="menu"],
+    [data-baseweb="menu"] > ul,
+    [data-baseweb="select"] [role="listbox"] {
+        background-color: #ede9fe !important;
+        color: #3b0d6e !important;
+        border: 1px solid #7c3aed !important;
+    }
+
+    /* Individual options */
+    [role="listbox"],
+    [role="option"],
+    li[role="option"] {
+        background-color: #ede9fe !important;
+        color: #3b0d6e !important;
+    }
+
+    [role="option"]:hover,
+    li[role="option"]:hover {
+        background-color: #d8b4fe !important;
+        color: #3b0d6e !important;
+    }
+
+    [role="option"][aria-selected="true"],
+    li[role="option"][aria-selected="true"] {
+        background-color: #7c3aed !important;
+        color: #ffffff !important;
+    }
+
+    /* Catch-all for any dark overlay divs inside the portal */
+    [data-baseweb="popover"] div,
+    [data-baseweb="popover"] ul,
+    [data-baseweb="popover"] li {
+        background-color: #ede9fe !important;
+        color: #3b0d6e !important;
+    }
+
+    /* Number input */
+    [data-testid="stNumberInput"] > div > input {
+        background-color: #ede9fe !important;
+        border: 1px solid #7c3aed !important;
+        color: #3b0d6e !important;
+    }
+
+    /* Text input */
+    [data-testid="stTextInput"] > div > input {
+        background-color: #ede9fe !important;
+        border: 1px solid #7c3aed !important;
+        color: #3b0d6e !important;
+    }
+
+    /* Metric label and value */
+    [data-testid="stMetricLabel"], [data-testid="stMetricValue"] {
+        color: #3b0d6e !important;
+    }
+
+    /* ── File uploader ── */
+    [data-testid="stFileUploader"] > div,
+    [data-testid="stFileUploader"] section,
+    [data-baseweb="file-uploader"],
+    [data-testid="stFileUploaderDropzone"],
+    [data-testid="stFileUploaderDropzoneInstructions"] {
+        background-color: #ede9fe !important;
+        border: 2px dashed #7c3aed !important;
+        border-radius: 12px !important;
+        color: #3b0d6e !important;
+    }
+
+    /* Text inside the uploader */
+    [data-testid="stFileUploader"] span,
+    [data-testid="stFileUploader"] p,
+    [data-testid="stFileUploader"] small,
+    [data-testid="stFileUploaderDropzoneInstructions"] span {
+        color: #3b0d6e !important;
+    }
+
+    /* The "Browse files" button inside uploader */
+    [data-testid="stFileUploader"] button,
+    [data-testid="baseButton-secondary"] {
+        background-color: #7c3aed !important;
+        color: #ffffff !important;
+        border: 1px solid #6b2d9e !important;
+        border-radius: 8px !important;
+    }
+
+    [data-testid="stFileUploader"] button:hover {
+        background-color: #5b21b6 !important;
+    }
+
+    /* Dataframe */
+    [data-testid="stDataFrame"] {
+        border: 1px solid #7c3aed !important;
+        border-radius: 8px;
+    }
+
+    /* Info / warning / error boxes */
+    [data-testid="stAlert"] {
+        border-radius: 10px !important;
     }
     </style>
     """,
@@ -141,8 +328,10 @@ def draw_unicode_text(image_np, text_items):
         font = ImageFont.load_default()
 
     for text, x, y in text_items:
-        draw.text((x + 1, y + 1), text, fill=(0, 0, 0), font=font)
-        draw.text((x, y), text, fill=(255, 255, 0), font=font)
+        # Shadow in mid-purple instead of black
+        draw.text((x + 1, y + 1), text, fill=(59, 13, 110), font=font)
+        # Label in bright yellow-white for contrast on the blot
+        draw.text((x, y), text, fill=(220, 200, 255), font=font)
 
     return np.array(pil_img)
 
@@ -211,11 +400,12 @@ def detect_cytokine_bands(image_np, lane_order):
         results[marker]["relative_intensity"] = rel
         results[marker]["pgml"] = pgml
 
+        # Band rectangle in bright purple instead of dark red
         cv2.rectangle(
             annotated,
             (results[marker]["lane_x1"], results[marker]["band_y1"]),
             (results[marker]["lane_x2"], results[marker]["band_y2"]),
-            (122, 0, 25),
+            (124, 58, 237),   # #7c3aed in BGR order
             2,
         )
 
@@ -391,35 +581,23 @@ def calculate_risk(patient, cytokines):
     return score, category, color
 
 
-def project_risk_over_time(current_score):
-    days = [0, 7, 14, 21, 28]
-    projected = [
-        current_score,
-        current_score * 1.04,
-        current_score * 1.08,
-        current_score * 1.13,
-        current_score * 1.19,
-    ]
-    return days, projected
-
-
 def risk_progress_html(score, category):
     score = max(0, min(score, 160))
     percent = (score / 160) * 100
     category_colors = {"Low": "#16a34a", "Moderate": "#f59e0b", "High": "#dc2626"}
-    color = category_colors.get(category, "#7a0019")
+    color = category_colors.get(category, "#6b2d9e")
 
     html = f"""
     <div style="margin-top:10px;">
         <div style="width:100%; background:linear-gradient(90deg,#16a34a 0%,#f59e0b 55%,#dc2626 100%);
                     height:22px; border-radius:999px; position:relative;">
             <div style="position:absolute; left:{percent}%; top:-6px; transform:translateX(-50%);
-                        width:6px; height:34px; background:black; border-radius:4px;"></div>
+                        width:6px; height:34px; background:#3b0d6e; border-radius:4px;"></div>
         </div>
-        <div style="display:flex; justify-content:space-between; font-size:12px; margin-top:4px;">
+        <div style="display:flex; justify-content:space-between; font-size:12px; margin-top:4px; color:#3b0d6e;">
             <span>Low</span><span>Moderate</span><span>High</span>
         </div>
-        <div style="margin-top:8px; font-size:14px;">
+        <div style="margin-top:8px; font-size:14px; color:#3b0d6e;">
             Current status: <span style="color:{color}; font-weight:700;">{category}</span>
         </div>
     </div>
@@ -428,6 +606,13 @@ def risk_progress_html(score, category):
 
 
 def build_pdf_report(patient_data, cytokine_values, score, category, logo_path=None):
+    # PDF palette
+    DARK_PURPLE  = colors.HexColor("#3b0d6e")   # body text
+    MID_PURPLE   = colors.HexColor("#6b2d9e")   # section headings
+    BRIGHT_PURPLE= colors.HexColor("#7c3aed")   # table headers
+    LIGHT_PURPLE = colors.HexColor("#ede9fe")   # row shading / label column
+    WHITE        = colors.white
+
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
     styles = getSampleStyleSheet()
@@ -437,7 +622,7 @@ def build_pdf_report(patient_data, cytokine_values, score, category, logo_path=N
         parent=styles["Title"],
         fontName="Times-Bold",
         fontSize=22,
-        textColor=colors.HexColor("#7a0019"),
+        textColor=MID_PURPLE,
         alignment=TA_CENTER,
         spaceAfter=10,
     )
@@ -447,7 +632,7 @@ def build_pdf_report(patient_data, cytokine_values, score, category, logo_path=N
         fontName="Times-Roman",
         fontSize=10.5,
         alignment=TA_CENTER,
-        textColor=colors.HexColor("#333333"),
+        textColor=DARK_PURPLE,
         spaceAfter=16,
     )
     section_style = ParagraphStyle(
@@ -455,7 +640,7 @@ def build_pdf_report(patient_data, cytokine_values, score, category, logo_path=N
         parent=styles["Heading2"],
         fontName="Times-Bold",
         fontSize=13,
-        textColor=colors.HexColor("#7a0019"),
+        textColor=MID_PURPLE,
         alignment=TA_LEFT,
         spaceAfter=8,
     )
@@ -465,7 +650,7 @@ def build_pdf_report(patient_data, cytokine_values, score, category, logo_path=N
         fontName="Times-Roman",
         fontSize=10.5,
         leading=14,
-        textColor=colors.black,
+        textColor=DARK_PURPLE,
     )
 
     story = []
@@ -480,7 +665,8 @@ def build_pdf_report(patient_data, cytokine_values, score, category, logo_path=N
     story.append(Paragraph("Patient Summary", section_style))
     patient_table = Table([
         ["Patient ID", str(patient_data["Patient ID"])],
-        ["Age", str(patient_data["Age"])],
+        ["Date of Birth", str(patient_data["Date of Birth"])],
+        ["Age", str(patient_data["Age"]) + " years"],
         ["Sex", str(patient_data["Sex"])],
         ["Ethnicity", str(patient_data["Ethnicity"])],
         ["Periodontal Status", str(patient_data["Periodontal Status Resolved"])],
@@ -489,8 +675,10 @@ def build_pdf_report(patient_data, cytokine_values, score, category, logo_path=N
         ["Blood Pressure", str(patient_data["Blood Pressure Resolved"])],
     ], colWidths=[180, 300])
     patient_table.setStyle(TableStyle([
-        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-        ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#833F3F")),
+        ("GRID", (0, 0), (-1, -1), 0.5, MID_PURPLE),
+        ("BACKGROUND", (0, 0), (0, -1), LIGHT_PURPLE),   # label column — light purple
+        ("TEXTCOLOR", (0, 0), (0, -1), DARK_PURPLE),
+        ("TEXTCOLOR", (1, 0), (1, -1), DARK_PURPLE),
         ("FONTNAME", (0, 0), (-1, -1), "Times-Roman"),
         ("FONTNAME", (0, 0), (0, -1), "Times-Bold"),
         ("PADDING", (0, 0), (-1, -1), 6),
@@ -506,9 +694,11 @@ def build_pdf_report(patient_data, cytokine_values, score, category, logo_path=N
         ["TNF-α", f"{cytokine_values['TNF-α']:.2f}"],
     ], colWidths=[220, 180])
     cytokine_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#7a0019")),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+        ("BACKGROUND", (0, 0), (-1, 0), BRIGHT_PURPLE),   # header row — bright purple
+        ("TEXTCOLOR", (0, 0), (-1, 0), WHITE),
+        ("BACKGROUND", (0, 1), (-1, -1), LIGHT_PURPLE),   # data rows — light purple
+        ("TEXTCOLOR", (0, 1), (-1, -1), DARK_PURPLE),
+        ("GRID", (0, 0), (-1, -1), 0.5, MID_PURPLE),
         ("FONTNAME", (0, 0), (-1, -1), "Times-Roman"),
         ("FONTNAME", (0, 0), (-1, 0), "Times-Bold"),
         ("PADDING", (0, 0), (-1, -1), 6),
@@ -534,7 +724,8 @@ def build_pdf_report(patient_data, cytokine_values, score, category, logo_path=N
 
     story.append(Paragraph("Prototype Note", section_style))
     story.append(Paragraph(
-        "This PHANTOM report is generated from a proof-of-concept system using prototype Western blot image analysis and simulated biomarker calibration. It is intended for demonstration purposes only and is not for clinical diagnosis.",
+        "This PHANTOM report is generated from a proof-of-concept system using prototype Western blot image analysis "
+        "and simulated biomarker calibration. It is intended for demonstration purposes only and is not for clinical diagnosis.",
         body_style
     ))
 
@@ -542,6 +733,21 @@ def build_pdf_report(patient_data, cytokine_values, score, category, logo_path=N
     pdf = buffer.getvalue()
     buffer.close()
     return pdf
+
+
+# ----------------------------
+# Matplotlib theme helper
+# ----------------------------
+def apply_purple_theme(ax, fig):
+    """Apply the purple/white palette to a matplotlib figure."""
+    fig.patch.set_facecolor("#f5f0ff")
+    ax.set_facecolor("#ede9fe")
+    for spine in ax.spines.values():
+        spine.set_edgecolor("#6b2d9e")
+    ax.tick_params(colors="#3b0d6e")
+    ax.xaxis.label.set_color("#3b0d6e")
+    ax.yaxis.label.set_color("#3b0d6e")
+    ax.title.set_color("#6b2d9e")
 
 
 # ----------------------------
@@ -555,19 +761,29 @@ if not st.session_state.started:
         with c2:
             st.image(logo_path, width=220)
 
-    st.markdown("<div class='landing-title'>PHANTOM</div>", unsafe_allow_html=True)
-    st.markdown(f"<div class='landing-sub'>{PHANTOM_FULL}</div>", unsafe_allow_html=True)
     st.markdown(
-        """
-        <div class='landing-desc'>
-        A proof-of-concept clinical analytics platform for estimating oral–renal inflammatory risk
-        through Western blot cytokine analysis, patient biodata, and predictive modeling.
+        f"""
+        <div style="
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px 20px 20px 20px;
+        ">
+            <div class='landing-title'>PHANTOM</div>
+            <div class='landing-sub'>{PHANTOM_FULL}</div>
+            <div class='landing-desc'>
+                A proof-of-concept clinical analytics platform for estimating oral–renal
+                inflammatory risk through Western blot cytokine analysis, patient biodata,
+                and predictive modeling.
+            </div>
         </div>
         """,
         unsafe_allow_html=True
     )
 
-    c1, c2, c3 = st.columns([1.2, 1, 1.2])
+    c1, c2, c3 = st.columns([1.5, 1, 1.5])
     with c2:
         if st.button("Start now", use_container_width=True, type="primary"):
             st.session_state.started = True
@@ -604,7 +820,16 @@ with st.container(border=True):
 
     with r1c1:
         patient_id = st.text_input("Patient / Study ID", value="PH-001")
-        age = st.slider("Age", 10, 100, 35)
+        dob = st.date_input(
+            "Date of Birth (DD/MM/YYYY)",
+            value=date(1990, 1, 1),
+            min_value=date(1900, 1, 1),
+            max_value=date.today(),
+            format="DD/MM/YYYY",
+        )
+        today = date.today()
+        age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+        st.caption(f"Calculated age: **{age} years**")
         sex = st.selectbox("Sex", ["Female", "Male", "Intersex", "Prefer not to say"])
         ethnicity = st.selectbox(
             "Ethnicity",
@@ -690,6 +915,7 @@ with st.container(border=True):
 
 patient_data = {
     "Patient ID": patient_id,
+    "Date of Birth": dob.strftime("%d/%m/%Y"),
     "Age": age,
     "Sex": sex,
     "Ethnicity": resolve_other(ethnicity, ethnicity_other),
@@ -778,26 +1004,90 @@ if analyze:
             st.subheader("Blot Image")
             st.image(annotated_image, caption="Uploaded blot with detected cytokine bands", use_container_width=True)
 
-            st.markdown("#### Projected Risk Severity Over Time")
-            days, projected_scores = project_risk_over_time(score)
+            st.markdown("#### Risk Factor Breakdown")
 
-            fig, ax = plt.subplots(figsize=(8, 4))
-            ax.plot(days, projected_scores, marker="o", linewidth=2)
-            ax.set_xlabel("Days")
-            ax.set_ylabel("Risk Score")
-            ax.set_title("Projected Oral–Renal Risk Trajectory")
-            ax.set_xticks(days)
+            # Build per-factor contribution scores for radar
+            radar_labels = [
+                "IL-1β", "IL-6", "TNF-α",
+                "Age", "Periodontal", "Bleeding Gums",
+                "Smoking", "Diabetes", "Blood Pressure",
+                "BMI", "Oral Hygiene", "Kidney Biomarkers"
+            ]
 
-            ymin = max(0, min(projected_scores) - 5)
-            ymax = max(projected_scores) + 8
-            ax.set_ylim(ymin, ymax)
+            il1b_score  = round(cytokine_values["IL-1β"] * 0.18, 1)
+            il6_score   = round(cytokine_values["IL-6"]  * 0.22, 1)
+            tnfa_score  = round(cytokine_values["TNF-α"] * 0.20, 1)
 
-            ax.grid(True, alpha=0.3)
-            st.pyplot(fig)
+            age_s = 14 if age >= 65 else (9 if age >= 50 else (5 if age >= 35 else 1))
 
+            perio_map2 = {"Healthy":0,"Gingivitis":6,"Mild Periodontitis":12,
+                          "Moderate Periodontitis":22,"Severe Periodontitis":34,
+                          "Advanced / Refractory Periodontitis":40}
+            perio_s = perio_map2.get(patient_data["Periodontal Status Resolved"], 10)
+
+            bleed_map2 = {"None":0,"Occasional":4,"Frequent":9,"Severe / spontaneous":14}
+            bleed_s = bleed_map2.get(patient_data["Bleeding Gums Resolved"], 6)
+
+            smok_map2 = {"Never":0,"Former (>5 years)":3,"Former (<5 years)":6,
+                         "Occasional":8,"Daily":14,"Heavy":18}
+            smok_s = smok_map2.get(patient_data["Smoking Resolved"], 6)
+
+            diab_map2 = {"No":0,"Prediabetes":6,"Type 1 Diabetes":14,
+                         "Type 2 Diabetes":16,"Gestational history":4}
+            diab_s = diab_map2.get(patient_data["Diabetes Resolved"], 6)
+
+            bp_map2 = {"No history":0,"Borderline":4,"Controlled":8,"Uncontrolled":14}
+            bp_s = bp_map2.get(patient_data["Blood Pressure Resolved"], 6)
+
+            bmi_v = patient_data["BMI"]
+            bmi_s = 10 if bmi_v >= 35 else (7 if bmi_v >= 30 else (4 if bmi_v >= 25 else 1))
+
+            hyg_map2 = {"Excellent":0,"Good":2,"Average":5,"Poor":9,"Very poor":13}
+            hyg_s = hyg_map2.get(patient_data["Oral Hygiene Resolved"], 5)
+
+            kidney_s = (
+                (22 if patient_data["eGFR"] < 60 else (8 if patient_data["eGFR"] < 90 else 0)) if patient_data["eGFR"] > 0 else 0
+            ) + (
+                (24 if patient_data["UACR"] >= 300 else (14 if patient_data["UACR"] >= 30 else 0)) if patient_data["UACR"] > 0 else 0
+            )
+            kidney_s = min(kidney_s, 40)  # cap for display
+
+            radar_values = [
+                il1b_score, il6_score, tnfa_score,
+                age_s, perio_s, bleed_s,
+                smok_s, diab_s, bp_s,
+                bmi_s, hyg_s, kidney_s
+            ]
+
+            # Normalise each value to 0–1 against its known max for shape clarity
+            radar_maxes = [100*0.18, 150*0.22, 120*0.20, 14, 40, 14, 18, 16, 14, 10, 13, 40]
+            radar_norm  = [min(v / m, 1.0) if m > 0 else 0 for v, m in zip(radar_values, radar_maxes)]
+
+            N = len(radar_labels)
+            angles = [n / float(N) * 2 * 3.14159265 for n in range(N)]
+            angles += angles[:1]
+            radar_norm += radar_norm[:1]
+
+            fig2, ax2 = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
+            fig2.patch.set_facecolor("#f5f0ff")
+            ax2.set_facecolor("#ede9fe")
+
+            ax2.plot(angles, radar_norm, color="#7c3aed", linewidth=2)
+            ax2.fill(angles, radar_norm, color="#7c3aed", alpha=0.25)
+
+            ax2.set_xticks(angles[:-1])
+            ax2.set_xticklabels(radar_labels, size=8, color="#3b0d6e")
+            ax2.set_yticks([0.25, 0.5, 0.75, 1.0])
+            ax2.set_yticklabels(["25%", "50%", "75%", "100%"], size=7, color="#6b2d9e")
+            ax2.tick_params(colors="#3b0d6e")
+            ax2.spines["polar"].set_color("#6b2d9e")
+            ax2.grid(color="#6b2d9e", alpha=0.3)
+            ax2.set_title("Patient Risk Factor Profile", color="#6b2d9e", pad=18, fontsize=12, fontweight="bold")
+
+            st.pyplot(fig2)
             st.caption(
-                "Projection shown for demonstration only. This represents a prototype untreated-risk trajectory, "
-                "not a clinical prediction."
+                "Each axis shows how much a factor contributes to the overall PHANTOM score, "
+                "normalised against its maximum possible value."
             )
             st.markdown("</div>", unsafe_allow_html=True)
 
@@ -830,7 +1120,8 @@ if analyze:
             st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
             st.subheader("Patient Summary")
             st.write(f"**ID:** {patient_data['Patient ID']}")
-            st.write(f"**Age:** {patient_data['Age']}")
+            st.write(f"**Date of Birth:** {patient_data['Date of Birth']}")
+            st.write(f"**Age:** {patient_data['Age']} years")
             st.write(f"**Sex:** {patient_data['Sex']}")
             st.write(f"**Ethnicity:** {patient_data['Ethnicity']}")
             st.write(f"**Periodontal status:** {patient_data['Periodontal Status Resolved']}")
